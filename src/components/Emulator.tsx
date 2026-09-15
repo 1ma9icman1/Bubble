@@ -1,9 +1,12 @@
-import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
+import { useEffect, useRef, useImperativeHandle, forwardRef, useState } from 'react';
 import { NES } from 'jsnes';
+import { Volume2, VolumeX } from 'lucide-react';
 
 export const Emulator = forwardRef(({ romData, onStart }: { romData: Uint8Array | null, onStart?: () => void }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const nesRef = useRef<NES | null>(null);
+  const [isMuted, setIsMuted] = useState(false);
+  const audioCtxRef = useRef<AudioContext | null>(null);
 
   useImperativeHandle(ref, () => ({
     buttonDown: (controller: number, button: number) => nesRef.current?.buttonDown(controller, button),
@@ -17,6 +20,27 @@ export const Emulator = forwardRef(({ romData, onStart }: { romData: Uint8Array 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    const audioCtx = new AudioContext();
+    audioCtxRef.current = audioCtx;
+    const scriptNode = audioCtx.createScriptProcessor(1024, 0, 2);
+    scriptNode.connect(audioCtx.destination);
+    
+    const buffer: number[] = [];
+    scriptNode.onaudioprocess = (e) => {
+      const outputL = e.outputBuffer.getChannelData(0);
+      const outputR = e.outputBuffer.getChannelData(1);
+      for (let i = 0; i < outputL.length; i++) {
+        if (buffer.length > 0 && !isMuted) {
+            const sample = buffer.shift()!;
+            outputL[i] = sample;
+            outputR[i] = sample;
+        } else {
+            outputL[i] = 0;
+            outputR[i] = 0;
+        }
+      }
+    };
+
     const nes = new NES({
       onFrame: (buffer: Uint32Array) => {
         const imageData = ctx.createImageData(256, 240);
@@ -29,7 +53,10 @@ export const Emulator = forwardRef(({ romData, onStart }: { romData: Uint8Array 
         ctx.putImageData(imageData, 0, 0);
       },
       onStatusUpdate: () => {},
-      sampleRate: 44100,
+      onAudioSample: (left: number, right: number) => {
+          buffer.push((left + right) / 2);
+      },
+      sampleRate: audioCtx.sampleRate,
     });
 
     nes.loadROM(romData);
@@ -42,8 +69,11 @@ export const Emulator = forwardRef(({ romData, onStart }: { romData: Uint8Array 
     return () => {
       clearInterval(interval);
       nesRef.current = null;
+      scriptNode.disconnect();
+      audioCtx.close();
+      audioCtxRef.current = null;
     };
-  }, [romData]);
+  }, [romData, isMuted]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -87,5 +117,15 @@ export const Emulator = forwardRef(({ romData, onStart }: { romData: Uint8Array 
     };
   }, [onStart]);
 
-  return <canvas ref={canvasRef} width="256" height="240" className="w-full h-auto aspect-[256/240] bg-black border-4 border-white/10" />;
+  return (
+    <div className="relative">
+        <canvas ref={canvasRef} width="256" height="240" className="w-full h-auto aspect-[256/240] bg-black border-4 border-white/10" />
+        <button 
+            onClick={() => setIsMuted(!isMuted)}
+            className="absolute top-2 left-2 p-2 bg-black/50 text-white rounded-full hover:bg-black/70"
+        >
+            {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+        </button>
+    </div>
+  );
 });
