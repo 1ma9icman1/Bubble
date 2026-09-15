@@ -1,5 +1,4 @@
 import React from 'react';
-import { X } from 'lucide-react';
 
 interface ControllerOverlayProps {
   onButtonDown: (button: number) => void;
@@ -8,11 +7,11 @@ interface ControllerOverlayProps {
 }
 
 export const ControllerOverlay: React.FC<ControllerOverlayProps> = ({ onButtonDown, onButtonUp, onExit }) => {
-  const createButton = (button: number, label: string, className: string) => (
+  const createButton = (button: number, label: string, className: string, shape: 'circle' | 'rect' | 'dpad' = 'rect') => (
     <button
-      className={`absolute flex items-center justify-center font-bold text-xs ${className}`}
-      onTouchStart={() => onButtonDown(button)}
-      onTouchEnd={() => onButtonUp(button)}
+      className={`flex items-center justify-center font-bold text-xs select-none ${className} ${shape === 'circle' ? 'rounded-full' : shape === 'dpad' ? '' : 'rounded'}`}
+      onTouchStart={(e) => { e.preventDefault(); onButtonDown(button); }}
+      onTouchEnd={(e) => { e.preventDefault(); onButtonUp(button); }}
       onMouseDown={() => onButtonDown(button)}
       onMouseUp={() => onButtonUp(button)}
     >
@@ -21,32 +20,31 @@ export const ControllerOverlay: React.FC<ControllerOverlayProps> = ({ onButtonDo
   );
 
   return (
-    <div className="fixed inset-0 bg-stone-900/90 z-50 flex items-center justify-center p-4">
-      <button className="absolute top-4 right-4 text-white" onClick={onExit}>
-        <X size={32} />
-      </button>
-
-      {/* NES Controller Layout */}
-      <div className="relative w-full max-w-2xl h-48 bg-stone-700 rounded-3xl border-b-8 border-r-8 border-stone-800 flex items-center justify-between px-12">
+    <div className="fixed inset-0 bg-stone-800 z-50 flex flex-col items-center justify-center p-4">
+      <div className="relative w-full max-w-[600px] aspect-[2/1] bg-stone-300 rounded-xl shadow-2xl flex items-center justify-between px-8 py-4 border-b-8 border-r-8 border-stone-400">
+        
         {/* D-Pad */}
-        <div className="relative w-24 h-24">
-            {createButton(4, '▲', 'top-0 left-8 w-8 h-8 bg-stone-800 rounded-t')}
-            {createButton(5, '▼', 'bottom-0 left-8 w-8 h-8 bg-stone-800 rounded-b')}
-            {createButton(6, '◀', 'top-8 left-0 w-8 h-8 bg-stone-800 rounded-l')}
-            {createButton(7, '▶', 'top-8 right-0 w-8 h-8 bg-stone-800 rounded-r')}
-            <div className="absolute top-8 left-8 w-8 h-8 bg-stone-800"></div>
+        <div className="relative w-32 h-32 ml-4">
+            {createButton(4, '', 'absolute top-0 left-10 w-12 h-12 bg-black rounded-t-sm', 'dpad')}
+            {createButton(5, '', 'absolute bottom-0 left-10 w-12 h-12 bg-black rounded-b-sm', 'dpad')}
+            {createButton(6, '', 'absolute top-10 left-0 w-12 h-12 bg-black rounded-l-sm', 'dpad')}
+            {createButton(7, '', 'absolute top-10 right-0 w-12 h-12 bg-black rounded-r-sm', 'dpad')}
+            <div className="absolute top-10 left-10 w-12 h-12 bg-black"></div>
         </div>
 
-        {/* Start/Select */}
-        <div className="flex gap-4">
-            {createButton(2, 'SELECT', 'w-16 h-4 bg-stone-800 rounded-full')}
-            {createButton(3, 'START', 'w-16 h-4 bg-stone-800 rounded-full')}
+        {/* Start/Select Panel */}
+        <div className="flex flex-col gap-6 items-center">
+            <div className="flex gap-4">
+                {createButton(2, 'SELECT', 'w-16 h-6 bg-stone-600 text-stone-200 text-[10px]')}
+                {createButton(3, 'START', 'w-16 h-6 bg-stone-600 text-stone-200 text-[10px]')}
+            </div>
+            <div className="text-stone-700 font-bold tracking-widest text-xl">Nintendo</div>
         </div>
 
-        {/* A/B */}
-        <div className="flex gap-4">
-            {createButton(1, 'B', 'w-16 h-16 bg-red-800 rounded-full')}
-            {createButton(0, 'A', 'w-16 h-16 bg-red-800 rounded-full')}
+        {/* A/B Buttons */}
+        <div className="flex gap-6 mr-4">
+            {createButton(1, 'B', 'w-20 h-20 bg-red-600 text-white shadow-inner', 'circle')}
+            {createButton(0, 'A', 'w-20 h-20 bg-red-600 text-white shadow-inner', 'circle')}
         </div>
       </div>
     </div>

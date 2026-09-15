@@ -1,9 +1,23 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useImperativeHandle, forwardRef } from 'react';
 
-export const DriveGameSelector = ({ onGameSelected }: { onGameSelected: (data: Uint8Array) => void }) => {
+export const DriveGameSelector = forwardRef(({ onGameSelected }: { onGameSelected: (data: Uint8Array) => void }, ref) => {
   const [games, setGames] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
+
+  useImperativeHandle(ref, () => ({
+    handleInput: (button: number, type: 'down' | 'up') => {
+        if (type !== 'down') return;
+        
+        // Filtered list to match what is displayed
+        const filteredGames = games.filter(g => g.name.toLowerCase().includes(searchTerm.toLowerCase()));
+        
+        if (button === 4) setSelectedIndex(prev => Math.max(0, prev - 1)); // Up
+        if (button === 5) setSelectedIndex(prev => Math.min(filteredGames.length - 1, prev + 1)); // Down
+        if (button === 0 && filteredGames[selectedIndex]) loadGame(filteredGames[selectedIndex].id); // A (Select)
+    }
+  }));
 
   useEffect(() => {
     fetch('/api/games')
@@ -62,12 +76,12 @@ export const DriveGameSelector = ({ onGameSelected }: { onGameSelected: (data: U
       <div className="max-h-40 overflow-y-auto">
         {games
           .filter(g => g.name.toLowerCase().includes(searchTerm.toLowerCase()))
-          .map(game => {
+          .map((game, index) => {
             return (
               <button 
                 key={game.id} 
                 onClick={() => loadGame(game.id)}
-                className="block w-full text-left p-1.5 hover:bg-white/10 text-white text-sm"
+                className={`block w-full text-left p-1.5 hover:bg-white/10 text-white text-sm ${index === selectedIndex ? 'bg-amber-600' : ''}`}
               >
                 {game.name}
               </button>
@@ -76,4 +90,4 @@ export const DriveGameSelector = ({ onGameSelected }: { onGameSelected: (data: U
       </div>
     </div>
   );
-};
+});

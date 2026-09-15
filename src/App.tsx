@@ -19,6 +19,10 @@ const ControllerView = ({ socket }: { socket: Socket | null }) => {
     socket?.emit('controller-input', { sessionId, playerId: parseInt(playerId || '1'), button, type });
   };
 
+  if (!socket) {
+    return <div className="text-white">Connecting...</div>;
+  }
+
   return (
     <div className="w-screen h-screen bg-stone-900 flex flex-col items-center justify-center">
       <h2 className="text-white mb-4">Controller P{playerId}</h2>
@@ -34,17 +38,25 @@ const ControllerView = ({ socket }: { socket: Socket | null }) => {
 const EmulatorView = ({ socket, sessionId, player1Connected, player2Connected, romData, setRomData }: any) => {
   const appContainerRef = useRef<HTMLDivElement>(null);
   const emulatorRef = useRef<any>(null);
+  const gameSelectorRef = useRef<any>(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
 
   useEffect(() => {
-    socket?.on('game-input', (data: any) => {
-        if (data.type === 'down') {
-            emulatorRef.current?.buttonDown(data.playerId, data.button);
+    if (!socket) return;
+    const handler = (data: any) => {
+        if (isFullScreen) {
+            if (data.type === 'down') {
+                emulatorRef.current?.buttonDown(data.playerId, data.button);
+            } else {
+                emulatorRef.current?.buttonUp(data.playerId, data.button);
+            }
         } else {
-            emulatorRef.current?.buttonUp(data.playerId, data.button);
+            gameSelectorRef.current?.handleInput(data.button, data.type);
         }
-    });
-  }, [socket]);
+    };
+    socket.on('game-input', handler);
+    return () => { socket.off('game-input', handler); };
+  }, [socket, isFullScreen]);
 
   const triggerFullScreen = () => {
     if (appContainerRef.current && !isFullScreen) {
@@ -59,7 +71,7 @@ const EmulatorView = ({ socket, sessionId, player1Connected, player2Connected, r
       <div className={`flex flex-col items-center justify-center text-center ${isFullScreen ? 'w-screen h-screen !p-0' : 'bg-black/70 p-8 rounded-lg border-2 border-amber-500 backdrop-blur-sm shadow-xl'}`}>
         <h1 className="text-4xl font-bold mb-6 tracking-tight text-white">NES EMULATOR</h1>
         
-        {!isFullScreen && <DriveGameSelector onGameSelected={setRomData} />}
+        {!isFullScreen && <DriveGameSelector ref={gameSelectorRef} onGameSelected={setRomData} />}
         
         {!isFullScreen && (
           <div className="flex gap-8 justify-center my-8">
@@ -91,22 +103,23 @@ export default function App() {
   const [sessionId] = useState(() => crypto.randomUUID());
   const [player1Connected, setPlayer1Connected] = useState(false);
   const [player2Connected, setPlayer2Connected] = useState(false);
-  const socketRef = useRef<Socket | null>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
-    socketRef.current = io();
-    socketRef.current.on('connect', () => {
-      socketRef.current?.emit('join-session', sessionId);
+    const s = io();
+    s.on('connect', () => {
+      s.emit('join-session', sessionId);
     });
-    return () => { socketRef.current?.disconnect(); };
+    setSocket(s);
+    return () => { s.disconnect(); };
   }, [sessionId]);
 
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/controller/:sessionId/:playerId" element={<ControllerView socket={socketRef.current} />} />
+        <Route path="/controller/:sessionId/:playerId" element={<ControllerView socket={socket} />} />
         <Route path="/" element={<EmulatorView 
-          socket={socketRef.current} 
+          socket={socket} 
           sessionId={sessionId}
           player1Connected={player1Connected}
           player2Connected={player2Connected}
