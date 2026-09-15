@@ -1,9 +1,14 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { NES } from 'jsnes';
 
-export const Emulator = ({ romData, onStart }: { romData: Uint8Array | null, onStart?: () => void }) => {
+export const Emulator = forwardRef(({ romData, onStart }: { romData: Uint8Array | null, onStart?: () => void }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const nesRef = useRef<NES | null>(null);
+
+  useImperativeHandle(ref, () => ({
+    buttonDown: (controller: number, button: number) => nesRef.current?.buttonDown(controller, button),
+    buttonUp: (controller: number, button: number) => nesRef.current?.buttonUp(controller, button),
+  }));
 
   useEffect(() => {
     if (!romData || !canvasRef.current) return;
@@ -49,13 +54,13 @@ export const Emulator = ({ romData, onStart }: { romData: Uint8Array | null, onS
         case 'ArrowDown': nesRef.current.buttonDown(controller, NES.Buttons.DOWN); break;
         case 'ArrowLeft': nesRef.current.buttonDown(controller, NES.Buttons.LEFT); break;
         case 'ArrowRight': nesRef.current.buttonDown(controller, NES.Buttons.RIGHT); break;
-        case 'z': nesRef.current.buttonDown(controller, NES.Buttons.A); break;
-        case 'x': nesRef.current.buttonDown(controller, NES.Buttons.B); break;
+        case 'z': nesRef.current.buttonDown(controller, 0); break; // A
+        case 'x': nesRef.current.buttonDown(controller, 1); break; // B
         case 'Enter': 
-          nesRef.current.buttonDown(controller, NES.Buttons.START); 
+          nesRef.current.buttonDown(controller, 3); // START
           onStart?.();
           break;
-        case 'Shift': nesRef.current.buttonDown(controller, NES.Buttons.SELECT); break;
+        case 'Shift': nesRef.current.buttonDown(controller, 2); break; // SELECT
       }
     };
     
@@ -67,10 +72,10 @@ export const Emulator = ({ romData, onStart }: { romData: Uint8Array | null, onS
         case 'ArrowDown': nesRef.current.buttonUp(controller, NES.Buttons.DOWN); break;
         case 'ArrowLeft': nesRef.current.buttonUp(controller, NES.Buttons.LEFT); break;
         case 'ArrowRight': nesRef.current.buttonUp(controller, NES.Buttons.RIGHT); break;
-        case 'z': nesRef.current.buttonUp(controller, NES.Buttons.A); break;
-        case 'x': nesRef.current.buttonUp(controller, NES.Buttons.B); break;
-        case 'Enter': nesRef.current.buttonUp(controller, NES.Buttons.START); break;
-        case 'Shift': nesRef.current.buttonUp(controller, NES.Buttons.SELECT); break;
+        case 'z': nesRef.current.buttonUp(controller, 0); break; // A
+        case 'x': nesRef.current.buttonUp(controller, 1); break; // B
+        case 'Enter': nesRef.current.buttonUp(controller, 3); break; // START
+        case 'Shift': nesRef.current.buttonUp(controller, 2); break; // SELECT
       }
     };
 
@@ -83,4 +88,4 @@ export const Emulator = ({ romData, onStart }: { romData: Uint8Array | null, onS
   }, [onStart]);
 
   return <canvas ref={canvasRef} width="256" height="240" className="w-full h-auto aspect-[256/240] bg-black border-4 border-white/10" />;
-};
+});
