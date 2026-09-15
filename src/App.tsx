@@ -13,6 +13,7 @@ import { ControllerOverlay } from './components/ControllerOverlay';
 
 export default function App() {
   const [romData, setRomData] = useState<Uint8Array | null>(null);
+  const [sessionId] = useState(() => crypto.randomUUID());
   const [player1Connected, setPlayer1Connected] = useState(false);
   const [player2Connected, setPlayer2Connected] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -24,11 +25,21 @@ export default function App() {
     socketRef.current = io();
     socketRef.current.on('connect', () => {
       console.log('Connected to signaling server');
+      socketRef.current?.emit('join-session', sessionId);
     });
+    
+    socketRef.current.on('game-input', (data) => {
+        if (data.type === 'down') {
+            emulatorRef.current?.buttonDown(data.playerId, data.button);
+        } else {
+            emulatorRef.current?.buttonUp(data.playerId, data.button);
+        }
+    });
+
     return () => {
       socketRef.current?.disconnect();
     };
-  }, []);
+  }, [sessionId]);
 
   const triggerFullScreen = () => {
     if (appContainerRef.current && !isFullScreen) {
@@ -77,13 +88,13 @@ export default function App() {
         {!isFullScreen && (
           <div className="flex gap-8 justify-center my-8">
             <div className="flex flex-col items-center gap-2">
-              <QRCodeSVG value="P1_CONNECT" size={100} />
+              <QRCodeSVG value={`P1_CONNECT:${sessionId}`} size={100} />
               <div className={`flex items-center gap-2 text-sm ${player1Connected ? 'text-green-400' : 'text-gray-400'}`}>
                 <Gamepad2 size={16} /> P1: {player1Connected ? 'CONNECTED' : 'DISCONNECTED'}
               </div>
             </div>
             <div className="flex flex-col items-center gap-2">
-              <QRCodeSVG value="P2_CONNECT" size={100} />
+              <QRCodeSVG value={`P2_CONNECT:${sessionId}`} size={100} />
               <div className={`flex items-center gap-2 text-sm ${player2Connected ? 'text-green-400' : 'text-gray-400'}`}>
                 <Gamepad2 size={16} /> P2: {player2Connected ? 'CONNECTED' : 'DISCONNECTED'}
               </div>

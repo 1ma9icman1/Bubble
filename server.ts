@@ -48,9 +48,15 @@ async function startServer() {
   // WebSocket signaling
   io.on("connection", (socket) => {
     console.log("A user connected");
+    socket.on("join-session", (sessionId) => {
+        socket.join(sessionId);
+        console.log(`User joined session: ${sessionId}`);
+    });
+    
     socket.on("controller-input", (data) => {
+      // data: { sessionId, playerId, button, type }
       console.log("Controller input:", data);
-      // Logic to forward to emulator
+      io.to(data.sessionId).emit("game-input", data);
     });
   });
 
