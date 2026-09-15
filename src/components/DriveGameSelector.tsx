@@ -1,4 +1,5 @@
 import { useEffect, useState, useImperativeHandle, forwardRef } from 'react';
+import { NES } from 'jsnes';
 
 export const DriveGameSelector = forwardRef(({ onGameSelected }: { onGameSelected: (data: Uint8Array) => void }, ref) => {
   const [games, setGames] = useState<any[]>([]);
@@ -13,9 +14,9 @@ export const DriveGameSelector = forwardRef(({ onGameSelected }: { onGameSelecte
         // Filtered list to match what is displayed
         const filteredGames = games.filter(g => g.name.toLowerCase().includes(searchTerm.toLowerCase()));
         
-        if (button === 4) setSelectedIndex(prev => Math.max(0, prev - 1)); // Up
-        if (button === 5) setSelectedIndex(prev => Math.min(filteredGames.length - 1, prev + 1)); // Down
-        if (button === 0 && filteredGames[selectedIndex]) loadGame(filteredGames[selectedIndex].id); // A (Select)
+        if (button === NES.Buttons.UP) setSelectedIndex(prev => Math.max(0, prev - 1)); // Up
+        if (button === NES.Buttons.DOWN) setSelectedIndex(prev => Math.min(filteredGames.length - 1, prev + 1)); // Down
+        if (button === NES.Buttons.BUTTON_A && filteredGames[selectedIndex]) loadGame(filteredGames[selectedIndex].id); // A (Select)
     }
   }));
 
