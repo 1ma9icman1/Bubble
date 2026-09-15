@@ -10,7 +10,24 @@ export const DriveGameSelector = ({ onGameSelected }: { onGameSelected: (data: U
       .then(res => res.json())
       .then(data => {
         if (data.error) throw new Error(data.error);
-        setGames(data);
+        
+        const priorityOrder = ['bubble bobble', 'bubble bobble 2', 'mario', 'excitebike', 'zelda'];
+        
+        const sortedGames = data.sort((a: any, b: any) => {
+          const nameA = a.name.toLowerCase();
+          const nameB = b.name.toLowerCase();
+
+          const indexA = priorityOrder.findIndex(p => nameA.includes(p));
+          const indexB = priorityOrder.findIndex(p => nameB.includes(p));
+
+          if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+          if (indexA !== -1) return -1;
+          if (indexB !== -1) return 1;
+
+          return nameA.localeCompare(nameB);
+        });
+
+        setGames(sortedGames);
       })
       .catch(err => {
         console.error('Error fetching games:', err);
@@ -44,20 +61,15 @@ export const DriveGameSelector = ({ onGameSelected }: { onGameSelected: (data: U
       />
       <div className="max-h-40 overflow-y-auto">
         {games
-          .filter(g => g.name.toLowerCase().endsWith('.nes'))
           .filter(g => g.name.toLowerCase().includes(searchTerm.toLowerCase()))
           .map(game => {
-            const displayName = game.name
-              .split('(')[0]
-              .replace(/\.nes$/i, '')
-              .trim();
             return (
               <button 
                 key={game.id} 
                 onClick={() => loadGame(game.id)}
                 className="block w-full text-left p-1.5 hover:bg-white/10 text-white text-sm"
               >
-                {displayName}
+                {game.name}
               </button>
             );
           })}

@@ -21,10 +21,25 @@ async function startServer() {
       const drive = google.drive({ version: 'v3', auth: process.env.GOOGLE_DRIVE_API_KEY });
       const folderId = '1qlxBDr_OPO_5kBJSx9hSAIU-pWeICRjK';
       const response = await drive.files.list({
-        q: `'${folderId}' in parents`,
+        q: `'${folderId}' in parents and trashed = false`,
         fields: 'files(id, name)',
       });
-      res.json(response.data.files);
+      
+      const uniqueFiles = new Map();
+      response.data.files?.forEach(file => {
+          if (file.name) {
+              const displayName = file.name
+                  .split('(')[0]
+                  .replace(/\.[^/.]+$/, "")
+                  .trim();
+              
+              const normalizedName = displayName.toLowerCase();
+              if (!uniqueFiles.has(normalizedName)) {
+                  uniqueFiles.set(normalizedName, { ...file, name: displayName });
+              }
+          }
+      });
+      res.json(Array.from(uniqueFiles.values()));
     } catch (error) {
       console.error('Error listing Drive files:', error);
       res.status(500).json({ error: 'Failed to list games' });
