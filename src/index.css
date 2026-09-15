@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 body {
-  background-image: url("/assets/background.jpg");
+  background-image: url("https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=2000&auto=format&fit=crop");
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
