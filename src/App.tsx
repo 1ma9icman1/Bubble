@@ -7,7 +7,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Gamepad2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { io, Socket } from 'socket.io-client';
-import { ROMUploader } from './components/ROMUploader';
+import { DriveGameSelector } from './components/DriveGameSelector';
 import { Emulator } from './components/Emulator';
 
 export default function App() {
@@ -54,7 +54,7 @@ export default function App() {
           NES EMULATOR
         </h1>
         
-        {!isFullScreen && <ROMUploader onFileLoaded={setRomData} />}
+        {!isFullScreen && <DriveGameSelector onGameSelected={setRomData} />}
         
         {!isFullScreen && (
           <div className="flex gap-8 justify-center my-8">
@@ -73,7 +73,7 @@ export default function App() {
           </div>
         )}
 
-        <div className={`mt-8 ${isFullScreen ? 'w-full h-full' : ''}`} onClick={triggerFullScreen}>
+        <div className={`mt-8 ${isFullScreen ? 'w-full h-full' : 'w-full max-w-3xl'}`} onClick={triggerFullScreen}>
           <Emulator romData={romData} onStart={triggerFullScreen} />
         </div>
       </div>

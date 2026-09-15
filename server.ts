@@ -3,6 +3,7 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { Server } from "socket.io";
 import { createServer } from "http";
+import { google } from "googleapis";
 
 async function startServer() {
   const app = express();
@@ -13,6 +14,35 @@ async function startServer() {
   // API routes
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });
+  });
+
+  app.get("/api/games", async (req, res) => {
+    try {
+      const drive = google.drive({ version: 'v3', auth: process.env.GOOGLE_DRIVE_API_KEY });
+      const folderId = '1qlxBDr_OPO_5kBJSx9hSAIU-pWeICRjK';
+      const response = await drive.files.list({
+        q: `'${folderId}' in parents`,
+        fields: 'files(id, name)',
+      });
+      res.json(response.data.files);
+    } catch (error) {
+      console.error('Error listing Drive files:', error);
+      res.status(500).json({ error: 'Failed to list games' });
+    }
+  });
+
+  app.get("/api/games/download/:fileId", async (req, res) => {
+    try {
+      const drive = google.drive({ version: 'v3', auth: process.env.GOOGLE_DRIVE_API_KEY });
+      const response = await drive.files.get(
+        { fileId: req.params.fileId, alt: 'media' },
+        { responseType: 'stream' }
+      );
+      response.data.pipe(res);
+    } catch (error) {
+      console.error('Error downloading Drive file:', error);
+      res.status(500).json({ error: 'Failed to download game' });
+    }
   });
 
   // WebSocket signaling
