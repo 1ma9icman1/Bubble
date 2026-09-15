@@ -63,9 +63,11 @@ async function startServer() {
   // WebSocket signaling
   io.on("connection", (socket) => {
     console.log("A user connected");
-    socket.on("join-session", (sessionId) => {
-        socket.join(sessionId);
-        console.log(`User joined session: ${sessionId}`);
+    socket.on("join-session", (data) => {
+        // data: { sessionId, playerId }
+        socket.join(data.sessionId);
+        socket.to(data.sessionId).emit("player-connected", data.playerId);
+        console.log(`User joined session: ${data.sessionId} as Player ${data.playerId}`);
     });
     
     socket.on("controller-input", (data) => {

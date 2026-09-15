@@ -44,7 +44,9 @@ const EmulatorView = ({ socket, sessionId, player1Connected, player2Connected, r
   useEffect(() => {
     if (!socket) return;
     const handler = (data: any) => {
-        if (isFullScreen) {
+        // Always pass input to emulator IF a game is loaded.
+        // If not loaded, pass to game selector.
+        if (romData) {
             if (data.type === 'down') {
                 emulatorRef.current?.buttonDown(data.playerId, data.button);
             } else {
@@ -56,7 +58,7 @@ const EmulatorView = ({ socket, sessionId, player1Connected, player2Connected, r
     };
     socket.on('game-input', handler);
     return () => { socket.off('game-input', handler); };
-  }, [socket, isFullScreen]);
+  }, [socket, romData]);
 
   const triggerFullScreen = () => {
     if (appContainerRef.current && !isFullScreen) {
@@ -108,7 +110,11 @@ export default function App() {
   useEffect(() => {
     const s = io();
     s.on('connect', () => {
-      s.emit('join-session', sessionId);
+      s.emit('join-session', { sessionId, playerId: 0 }); // Join as viewer initially
+    });
+    s.on('player-connected', (playerId) => {
+        if (playerId === 1) setPlayer1Connected(true);
+        if (playerId === 2) setPlayer2Connected(true);
     });
     setSocket(s);
     return () => { s.disconnect(); };
